@@ -7,15 +7,66 @@
 
 <img src="icon.png" align="left" width="25%"/>
 
-A library for the Airtable REST API and Metadata API
+A library for the Airtable REST API and Metadata API, using XQuery
+
+This library module contains functions for communicating with Airtable’s REST
+and Metadata APIs via XQuery.
+
+All functions require an API Key from Airtable. The two functions that access 
+Airtable’s Metadata API require an additional token from Airtable.
+
+Rest API functions:
+
+- airtable:create-records()
+- airtable:retrieve-record()
+- airtable:list-records()
+- airtable:update-records()
+- airtable:delete-records()
+
+Metadata API functions:
+
+- airtable:list-bases()
+- airtable:get-base-tables-schema()
+
+The library sends requests to the Airtable API using the EXPath HTTP Client
+library. (See eXist notes below.)
+
+Successful responses (with status 200) are returned with the response body’s 
+JSON object parsed as a map. 
+
+When a response indicates an error (a non-200 status), the library’s 
+functions all return a map with an "error" entry, with subentries to aid in 
+debugging: request, response head and body, rate limit assessments, start and 
+end dateTimes, and duration in seconds.
+
+Function documentation is adapted from the Airtable API for XQuery context 
+and style (XDM terminology replaces JSON terminology, and parameters are 
+kebab case rather than camel case.) 
+
+The library is dependent on eXist in two areas:
+
+1. eXist’s EXPath HTTP Client module returns JSON as xs:base64Binary, so 
+util:binary-to-string() is always needed before the JSON can be parsed.
+
+2. To prevent hitting the Airtable API’s rate limits, we use eXist’s 
+cache module to store the dateTime of the last request. If a delay is needed
+before a request can be submitted, the util:wait() function is used.
+
+Caveats:
+
+- The "typecast" parameter for automatic data conversion for list, create, and 
+update actions hasn’t been implemented.
+- No special handling for User and Server error codes except rate limits; 
+instead, full HTTP response headers are returned.
+
 
 ## Requirements
 
-*   [exist-db](http://exist-db.org/exist/apps/homepage/index.html) version: `5.x` or greater
+*   [exist-db](https://exist-db.org/exist/apps/homepage/index.html) version: `5.x` or greater
 
-*   [ant](http://ant.apache.org) version: `1.10.7` \(for building from source\)
+*   [ant](https://ant.apache.org) version: `1.10.7` \(for building from source\)
 
-*   [node](http://nodejs.org) version: `12.x` \(for building from source\)
+*   [node](https://nodejs.org) version: `12.x` \(for building from source\)
     
 
 ## Installation
