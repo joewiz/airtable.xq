@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<meta 
+  xmlns="http://exist-db.org/xquery/repo">
+  <description>A library for the Airtable REST API and Metadata API</description>
+  <author>Joe Wicentowski</author>
+  <website>https://joewiz.org</website>
+  <status>SNAPSHOT</status>
+  <license>AGPL-3.0</license>
+  <copyright>true</copyright>
+  <type>library</type>
+</meta>
