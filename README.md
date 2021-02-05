@@ -5,8 +5,6 @@
 ![exist-db CI](https://github.com/joewiz/airtable.xq/workflows/exist-db%20CI/badge.svg)
 [![Coverage percentage][coveralls-image]][coveralls-url]
 
-<img src="icon.png" align="left" width="25%"/>
-
 A library for the Airtable REST API and Metadata API, using XQuery
 
 This library module contains functions for communicating with Airtable’s REST
