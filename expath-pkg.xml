@@ -6,6 +6,6 @@
   <dependency processor="http://exist-db.org" semver-min="5.0.0"/>
   <xquery>
     <namespace>http://joewiz.org/ns/xquery/airtable</namespace>
-    <file>airtable.xq</file>
+    <file>airtable.xqm</file>
   </xquery>
 </package>
