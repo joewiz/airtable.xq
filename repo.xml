@@ -4,8 +4,15 @@
   <description>A library for the Airtable REST API and Metadata API</description>
   <author>Joe Wicentowski</author>
   <website>https://joewiz.org</website>
-  <status>SNAPSHOT</status>
+  <status>stable</status>
   <license>AGPL-3.0</license>
   <copyright>true</copyright>
   <type>library</type>
+  <changelog>
+    <change version="1.0.0">
+      <ul xmlns="http://www.w3.org/1999/xhtml">
+        <li>Initial release</li>
+      </ul>
+    </change>
+  </changelog>
 </meta>
