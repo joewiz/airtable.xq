@@ -3,7 +3,7 @@
   xmlns="http://exist-db.org/xquery/repo">
   <description>A library for the Airtable REST API and Metadata API</description>
   <author>Joe Wicentowski</author>
-  <website>https://joewiz.org</website>
+  <website>https://github.com/joewiz/airtable.xq</website>
   <status>stable</status>
   <license>AGPL-3.0</license>
   <copyright>true</copyright>
