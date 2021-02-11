@@ -39,7 +39,7 @@ xquery version "3.1";
  : instead, full HTTP response headers are returned.
  : 
  : @author Joe Wicentowski
- : @version 1.0.0
+ : @version 1.0.1
  :
  : @see https://airtable.com/api
  : @see https://airtable.com/api/meta

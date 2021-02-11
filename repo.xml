@@ -9,6 +9,11 @@
   <copyright>true</copyright>
   <type>library</type>
   <changelog>
+    <change version="1.0.1">
+      <ul xmlns="http://www.w3.org/1999/xhtml">
+        <li>Fixed: Error in signature of airtable:wait helper function</li>
+      </ul>
+    </change>
     <change version="1.0.0">
       <ul xmlns="http://www.w3.org/1999/xhtml">
         <li>Initial release</li>
