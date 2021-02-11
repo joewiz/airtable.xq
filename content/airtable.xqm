@@ -574,11 +574,11 @@ function airtable:send-request-when-rate-limit-ok(
 declare
     %private
 function airtable:wait(
-    $duration as xs:dayTimeDuration, 
+    $milliseconds-to-wait as xs:integer, 
     $function as function(*), 
     $arguments as array(*)
 ) {
-    util:wait($duration),
+    util:wait($milliseconds-to-wait),
     apply($function, $arguments)
 };
 
