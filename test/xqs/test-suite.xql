@@ -7,7 +7,7 @@ xquery version "3.1";
  : @see https://joewiz.org
  :)
 
-module namespace tests = "http://joewiz.org/ns/xquery///airtable/tests";
+module namespace tests = "http://joewiz.org/ns/xquery/airtable/tests";
 
 declare namespace test="http://exist-db.org/xquery/xqsuite";
 

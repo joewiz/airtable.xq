@@ -120,7 +120,7 @@ ant
    ant dev
    ```   
 
-If you see `BUILD SUCCESSFUL` ant has generated a `airtable.xq-1.0.0.xar` file in the `build/` folder. To install it, follow the instructions [above](#installation).
+If you see `BUILD SUCCESSFUL` ant has generated a `airtable.xq-1.1.0-SNAPSHOT.xar` file in the `build/` folder. To install it, follow the instructions [above](#installation).
 
 
 
