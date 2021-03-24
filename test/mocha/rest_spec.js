@@ -29,14 +29,4 @@ describe('rest api returns', function () {
         })
     })
 
-    it.skip('file index.html exists in application root', function (done) {
-      client
-        .get('/exist/rest/db/airtable/index.html')
-        .expect(200)
-        .end(function (err, res) {
-          expect(res.status).to.equal(200)
-          if (err) return done(err)
-          done()
-        })
-    })
   })
