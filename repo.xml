@@ -1,23 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<meta 
-  xmlns="http://exist-db.org/xquery/repo">
-  <description>A library for the Airtable REST API and Metadata API</description>
-  <author>Joe Wicentowski</author>
-  <website>https://github.com/joewiz/airtable.xq</website>
-  <status>stable</status>
-  <license>AGPL-3.0</license>
-  <copyright>true</copyright>
-  <type>library</type>
-  <changelog>
-    <change version="1.0.1">
-      <ul xmlns="http://www.w3.org/1999/xhtml">
-        <li>Fixed: Error in signature of airtable:wait helper function</li>
-      </ul>
-    </change>
-    <change version="1.0.0">
-      <ul xmlns="http://www.w3.org/1999/xhtml">
-        <li>Initial release</li>
-      </ul>
-    </change>
-  </changelog>
+<meta xmlns="http://exist-db.org/xquery/repo">
+    <description>A library for the Airtable REST API and Metadata API</description>
+    <author>Joe Wicentowski</author>
+    <website>https://github.com/joewiz/airtable.xq</website>
+    <status>stable</status>
+    <license>AGPL-3.0</license>
+    <copyright>true</copyright>
+    <type>library</type>
+    <changelog>
+        <change version="1.0.1">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: Error in signature of airtable:wait helper function</li>
+            </ul>
+        </change>
+        <change version="1.0.0">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Initial release</li>
+            </ul>
+        </change>
+    </changelog>
 </meta>
