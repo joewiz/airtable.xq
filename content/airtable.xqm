@@ -143,7 +143,7 @@ declare function airtable:get-base-tables-schema(
  : @param $table-name The name of the table where the records should be added
  : @param $records A sequence of maps, each containing a "fields" entry
  : 
- : @return An array of the new record entries created if the call succeeded, including record IDs that uniquely identify the records, or a map with an "error" entry containing information about the request
+ : @return A map containing an "records" entry with an array of the new record entries created if the call succeeded, including record IDs that uniquely identify the records, or a map with an "error" entry containing information about the request
  : 
  : @see https://airtable.com/api
  :)
@@ -152,7 +152,7 @@ declare function airtable:create-records(
     $base-id as xs:string, 
     $table-name as xs:string, 
     $records as map(*)*
-) as item()+ {
+) as map(*)+ {
     let $records-for-this-request := 
         map { 
             "records": 
@@ -169,7 +169,7 @@ declare function airtable:create-records(
         (
             $response,
             (: keep creating records if the first attempt was successful :)
-            if (exists($records-for-next-request) and $response instance of array(*)) then
+            if (exists($records-for-next-request) and map:contains($response, "records")) then
                 airtable:create-records($api-key, $base-id, $table-name, $records-for-next-request)
             else
                 ()
@@ -340,7 +340,7 @@ declare function airtable:list-records(
  : @param $records A sequence of maps containing "id" and "fields" entries
  : @param $destroy-existing Whether to perform a destructive update and clear all unspecified cell values
  : 
- : @return An array of the updated record entries created if the call succeeded, or a map with an "error" entry containing information about the request
+ : @return A map containing an "records" entry with an array of the updated record entries created if the call succeeded, or a map with an "error" entry containing information about the request
  : 
  : @see https://airtable.com/api
  :)
@@ -372,7 +372,7 @@ declare function airtable:update-records(
         (
             $response,
             (: keep creating records if the first attempt was successful :)
-            if (exists($records-for-next-request) and $response instance of array(*)) then
+            if (exists($records-for-next-request) and map:contains($response, "records")) then
                 airtable:update-records($api-key, $base-id, $table-name, $records-for-next-request, $destroy-existing)
             else
                 ()
