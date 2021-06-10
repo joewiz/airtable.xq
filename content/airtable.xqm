@@ -65,12 +65,16 @@ declare variable $airtable:METADATA_API := "https://api.airtable.com/v0/meta/";
 (:~ We will cache the time of the last request to avoid exceeding the rate limit :)
 declare variable $airtable:RATE_LIMIT_CACHE_NAME := "airtable";
 
-(: Initialize rate limit cache, with stale entries expiring after 5 minutes :)
+(: Initialize rate limit cache, with stale entries expiring after 1 minute; max 128 bases at any given time.
+ : Why? From the cache module documentation:
+ : "eXist-db cannot know how much memory the data you will put in the cache will take, so it is up to you to manage your own memory needs here."
+ :)
 declare variable $airtable:INITIALIZE_CACHE := 
-    if (cache:names() = "airtable") then
+    if (cache:names() = $airtable:RATE_LIMIT_CACHE_NAME) then
         ()
     else
-        cache:create($airtable:RATE_LIMIT_CACHE_NAME, map { "expireAfterAccess": 1000 });
+        cache:create($airtable:RATE_LIMIT_CACHE_NAME, map { "expireAfterAccess": 60000, "maximumSize": 128 })
+;
 
 (:~ The API is limited to 5 requests per second per base. :)
 declare variable $airtable:MIN_DURATION_BETWEEN_REQUESTS := xs:dayTimeDuration("PT0.2S");
@@ -500,6 +504,7 @@ function airtable:send-request-when-rate-limit-ok(
     $request as element(http:request), 
     $cache-key as xs:string?
 ) as map(*) {
+    let $initialize-cache-if-needed := $airtable:INITIALIZE_CACHE
     let $start-dateTime := util:system-dateTime()
     let $wait-until := cache:get($airtable:RATE_LIMIT_CACHE_NAME, $cache-key)
     let $rate-limit-info := 
