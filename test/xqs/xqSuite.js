@@ -7,7 +7,7 @@ const expect = require('chai').expect
 // Dynamically generate a mocha testsuite for xqsuite tests. Requires its own process, hence && in package.json
 let Test = Mocha.Test
 
-  let url = 'http://localhost:8080/exist/rest/db/system/repo/airtable-1.1.0-SNAPSHOT/test/xqs/test-runner.xq'
+  let url = 'http://localhost:8080/exist/rest/db/system/repo/airtable-1.0.3/test/xqs/test-runner.xq'
   
 http.get(url, (res) => {
   let data = ''
