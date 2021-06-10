@@ -8,6 +8,12 @@
     <copyright>true</copyright>
     <type>library</type>
     <changelog>
+        <change version="1.0.3">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: Processing of batches of create or update requests containing more than 10 records</li>
+                <li>Fixed: Explicitly create cache, as required by eXist 5.3.0</li>
+            </ul>
+        </change>
         <change version="1.0.2">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Reviewed installation instructions</li>

@@ -1,6 +1,6 @@
 {
     "name": "airtable.xq",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "A library for the Airtable REST API and Metadata API",
     "homepage": "https://github.com/joewiz/airtable.xq#readme",
     "bugs": "https://github.com/joewiz/airtable.xq/issues",
