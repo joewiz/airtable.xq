@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project default="all" name="airtable.xq">
-    <description>A library for the Airtable REST API and Metadata API</description>
+    <description>A library for the Airtable Web API, using XQuery</description>
     <xmlproperty file="expath-pkg.xml"/>
     <property name="project.version" value="${package(version)}"/>
     <property name="project.app" value="airtable.xq"/>

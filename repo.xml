@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <meta xmlns="http://exist-db.org/xquery/repo">
-    <description>A library for the Airtable REST API and Metadata API</description>
+    <description>A library for the Airtable Web API, using XQuery</description>
     <author>Joe Wicentowski</author>
     <website>https://github.com/joewiz/airtable.xq</website>
     <status>stable</status>
@@ -8,6 +8,11 @@
     <copyright>true</copyright>
     <type>library</type>
     <changelog>
+        <change version="2.0.0">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>BREAKING: Conform to Airtable's new token-based authentication and rate limit rules</li>
+            </ul>
+        </change>
         <change version="1.0.3">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed: Processing of batches of create or update requests containing more than 10 records</li>
