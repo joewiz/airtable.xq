@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+    <app>
+        <name>airtable</name>
+        <url>http://joewiz.org/ns/pkg/airtable</url>
+        <title>airtable.xq</title>
+        <!-- VERSION SET AUTOMATICALLY DO NOT CHANGE -->
+        <!-- <version>0.1.0</version> -->
+    </app>
+</root>
