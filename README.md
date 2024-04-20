@@ -174,6 +174,20 @@ npx cypress open
 
 You can take a look at the [Contribution guidelines for this project](.github/CONTRIBUTING.md)
 
+## Release
+
+Releases for this data package are automated. Any commit to the `master` branch will trigger the release automation.
+
+All commit message must conform to [Conventional Commit Messages](https://www.conventionalcommits.org/en/v1.0.0/) to determine semantic versioning of releases, please adhere to these conventions, like so:
+
+| Commit message  | Release type |
+|-----------------|--------------|
+| `fix(pencil): stop graphite breaking when too much pressure applied` | Patch Release |
+| `feat(pencil): add 'graphiteWidth' option` | ~~Minor~~ Feature Release |
+| `perf(pencil): remove graphiteWidth option`<br/><br/>`BREAKING CHANGE: The graphiteWidth option has been removed.`<br/>`The default graphite width of 10mm is always used for performance reasons.` | ~~Major~~ Breaking Release |
+
+When opening PRs commit messages are checked using commitlint.
+
 ## License
 
 AGPL-3.0 © [Joe Wicentowski](https://joewiz.org)
