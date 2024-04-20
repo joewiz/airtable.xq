@@ -103,7 +103,7 @@ More recently, I've adopted the CI approach used by @duncdrum in [aws.xq](https:
 
 ## Installation
 
-1.  Download the `airtable.xq.xar` file from GitHub [releases](https://github.com/joewiz/airtable.xq/releases) page.
+1.  Download the `airtable.xar` file from GitHub [releases](https://github.com/joewiz/airtable.xq/releases) page.
 
 2.  Open the [Dashboard](http://localhost:8080/exist/apps/dashboard/index.html) on your eXist-db instance and click on `Package Manager`.
 
@@ -114,11 +114,7 @@ More recently, I've adopted the CI approach used by @duncdrum in [aws.xq](https:
 ### Building from source
 
 1.  Download, fork or clone this GitHub repository
-2.  There are two default build targets in `build.xml`:
-    *   `dev` including *all* files from the source folder including those with potentially sensitive information.
-  
-    *   `deploy` is the official release. It excludes files necessary for development but that have no effect upon deployment.
-  
+2.  The default build target in `build.xml` is `xar`
 3.  Calling `ant`in your CLI will build both files:
   
 ```bash
@@ -126,49 +122,13 @@ cd airtable.xq
 ant
 ```
 
-   1. to only build a specific target call either `dev` or `deploy` like this:
-   ```bash   
-   ant dev
-   ```   
+Since releases have been automated when building locally you might want to supply your own version number (e.g. `X.X.X`) like this:
 
-If you see `BUILD SUCCESSFUL` ant has generated a `airtable.xq-*.xar` file in the `build/` folder. To install it, follow the instructions [above](#installation).
-
-
-
-## Running Tests
-
-To run tests locally your app needs to be installed in a running exist-db instance at the default port `8080` and with the default dba user `admin` with the default empty password.
-
-A quick way to set this up for docker users is to simply issue:
-
-```bash
-docker run -dit -p 8080:8080 existdb/existdb:release
+```shell
+ant -Dapp.version=X.X.X
 ```
 
-After you finished installing the application, you can run the full testsuite locally.
-
-### Unit-tests
-
-This app uses [mochajs](https://mochajs.org) as a test-runner. To run both xquery and javascript unit-tests type:
-
-```bash
-npm test
-```
-
-### Integration-tests
-
-This app uses [cypress](https://www.cypress.io) for integration tests, just type:
-
-```bash
-npm run cypress
-```
-
-Alternatively, use npx:
-
-```bash
-npx cypress open
-```
-
+If you see `BUILD SUCCESSFUL` ant has generated a `airtable.xar` file in the `build/` folder. To install it, follow the instructions [above](#installation).
 
 ## Contributing
 
@@ -176,7 +136,7 @@ You can take a look at the [Contribution guidelines for this project](.github/CO
 
 ## Release
 
-Releases for this data package are automated. Any commit to the `master` branch will trigger the release automation.
+Releases for this data package are automated. Any commit to the `main` branch will trigger the release automation.
 
 All commit message must conform to [Conventional Commit Messages](https://www.conventionalcommits.org/en/v1.0.0/) to determine semantic versioning of releases, please adhere to these conventions, like so:
 
