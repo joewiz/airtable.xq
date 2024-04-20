@@ -70,7 +70,7 @@ The library uses standard XQuery 3.1, but is dependent on eXist in two areas:
 `util:binary-to-string()` is always needed before the JSON can be parsed.
 
 2. To prevent hitting the Airtable API’s rate limits, we use eXist’s 
-`cache` module to store the dateTime of the last request. If a delay is needed
+`cache` module to store the dateTime of the last request. If a delay is needed 
 before a request can be submitted, the `util:wait()` function is used.
 
 To adapt the library to another processor, you may adapt these `util` and 
