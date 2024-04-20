@@ -22,9 +22,9 @@
     ["@semantic-release/github", {
       "assets": [
         {
-          "path": "build/airtable-xq.xar", 
-          "name": "airtable-xq.xar",
-          "label": "Expath package (aws-xq.xar)"
+          "path": "build/airtable.xar", 
+          "name": "airtable.xar",
+          "label": "EXPath Package (airtable.xar)"
         }
       ]
     }]
