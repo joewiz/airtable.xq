@@ -1,12 +1,12 @@
 xquery version "3.1";
 
 (:~ 
- : This library module contains functions for communicating with Airtable’s REST
- : and Metadata APIs via XQuery.
+ : This library module contains functions for communicating with Airtable’s Web 
+ : API via XQuery.
  : 
- : All functions require an API Key from Airtable. The two functions that access 
- : Airtable’s Metadata API require an additional token from Airtable.
- : 
+ : All functions require a personal access token or OAuth access token from 
+ : Airtable. 
+ :
  : The library sends requests to the Airtable API using the EXPath HTTP Client
  : library. (See eXist notes below.)
  : 
@@ -18,9 +18,9 @@ xquery version "3.1";
  : debugging: request, response head and body, rate limit assessments, start and 
  : end dateTimes, and duration in seconds.
  : 
- : Function documentation is adapted from the Airtable API for XQuery context 
- : and style (XDM terminology replaces JSON terminology, and parameters are 
- : kebab case rather than camel case.) 
+ : Function documentation is adapted to use XQuery conventions (XDM terminology 
+ : replaces JSON terminology, and parameters are kebab case rather than camel 
+ : case.) 
  : 
  : The library is dependent on eXist in two areas:
  : 
@@ -29,20 +29,19 @@ xquery version "3.1";
  : 
  : 2. To prevent hitting the Airtable API’s rate limits, we use eXist’s 
  : cache module to store the dateTime of the last request. If a delay is needed
- : before a request can be submitted, the util:wait() function is used.
+ : before a request can be submitted, the util:wait() function is used. 
  : 
  : Caveats:
  : 
- : - The "typecast" parameter for automatic data conversion for list, create, and 
- : update actions hasn’t been implemented.
+ : - The "typecast" parameter for automatic data conversion for list, create, 
+ : and update actions hasn’t been implemented.
  : - No special handling for User and Server error codes except rate limits; 
  : instead, full HTTP response headers are returned.
  : 
  : @author Joe Wicentowski
- : @version 1.0.1
+ : @version 2.0.0
  :
- : @see https://airtable.com/api
- : @see https://airtable.com/api/meta
+ : @see https://airtable.com/developers/web/api
  :)
 
 module namespace airtable = "http://joewiz.org/ns/xquery/airtable";
@@ -56,18 +55,19 @@ declare namespace util = "http://exist-db.org/xquery/util";
 
 (: ======== GLOBAL VARIABLES ======== :)
 
-(:~ The base URL for the Airtable REST API :)
-declare variable $airtable:REST_API := "https://api.airtable.com/v0/";
-
-(:~ The base URL for the Airtable Metadata API :)
-declare variable $airtable:METADATA_API := "https://api.airtable.com/v0/meta/";
+(:~ The base URL for the Airtable Web API :)
+declare variable $airtable:WEB_API_BASE := "https://api.airtable.com/v0/";
 
 (:~ We will cache the time of the last request to avoid exceeding the rate limit :)
 declare variable $airtable:RATE_LIMIT_CACHE_NAME := "airtable";
 
-(: Initialize rate limit cache, with stale entries expiring after 1 minute; max 128 bases at any given time.
- : Why? From the cache module documentation:
- : "eXist-db cannot know how much memory the data you will put in the cache will take, so it is up to you to manage your own memory needs here."
+(:~
+ : Initialize rate limit cache, with conservative settings:
+ : - stale entries expire after 1 minute
+ : - max 128 bases at any given time.
+ : Why these limits? The cache module documentation states:
+ : "eXist-db cannot know how much memory the data you will put in the cache 
+ : will take, so it is up to you to manage your own memory needs here."
  :)
 declare variable $airtable:INITIALIZE_CACHE := 
     if (cache:names() = $airtable:RATE_LIMIT_CACHE_NAME) then
@@ -76,10 +76,18 @@ declare variable $airtable:INITIALIZE_CACHE :=
         cache:create($airtable:RATE_LIMIT_CACHE_NAME, map { "expireAfterAccess": 60000, "maximumSize": 128 })
 ;
 
-(:~ The API is limited to 5 requests per second per base. :)
-declare variable $airtable:MIN_DURATION_BETWEEN_REQUESTS := xs:dayTimeDuration("PT0.2S");
+(:~ 
+ : The API is limited to 50 requests per second for all traffic using personal 
+ : access tokens from a user or service account. 
+ :  
+ : 1/50th of a second is equal to .02 seconds.
+ :)
+declare variable $airtable:MIN_DURATION_BETWEEN_REQUESTS := xs:dayTimeDuration("PT0.02S");
 
-(:~ If you exceed this rate, you will receive a 429 status code and will need to wait 30 seconds before subsequent requests will succeed. :)
+(:~ 
+ : If you exceed this rate, you will receive a 429 status code and will need 
+ : to wait 30 seconds before subsequent requests will succeed. 
+ :)
 declare variable $airtable:RATE_LIMIT_COOL_OFF_PERIOD := xs:dayTimeDuration("PT30S");
 
 (:~ The rate limit is 10 records per create request :)
@@ -98,63 +106,90 @@ declare variable $airtable:HTTP_RATE_LIMIT_EXCEEDED := "429";
 (: ======== MAIN FUNCTIONS ======== :)
 
 (:~ 
- : Return the list of bases the API key can access in the order they appear on 
- : the user’s home screen. The result will be truncated to only include the 
- : first 1000 bases.
+ : Get user info
  : 
- : Developers must request an Airtable Metadata Client Secret token.
+ : Retrieve the user's ID associated with the provided token. For OAuth access 
+ : tokens, the scopes associated with the token used are also returned. For 
+ : tokens with the `user.email:read` scope, the user's email is also returned.
+ :
+ : @param $access-token Airtable personal access token or OAuth access token
  : 
- : @param $api-key Airtable API Key
- : @param $client-secret Airtable Metadata API Client Secret token
+ : @return The user's ID
  : 
- : @return A map containing a "bases" entry, or a map with an "error" entry containing information about the request
- : 
- : @see https://airtable.com/api/meta
+ : @see https://airtable.com/developers/web/api/get-user-id-scopes
  :)
-declare function airtable:list-bases(
-    $api-key as xs:string, 
-    $client-secret as xs:string
+declare function airtable:get-user-info(
+    $access-token as xs:string
 ) as map(*) {
-    airtable:send-request($api-key, $client-secret, "GET", (), (), (), (), (), ())
+    airtable:send-request(
+        $access-token, 
+        "GET", 
+        airtable:generate-href(("meta", "whoami"))
+    )
 };
 
 (:~ 
- : Return the schema of the tables in the specified base.
+ : Return the list of bases the API key can access in the order they appear on 
+ : the user’s home screen. The result will be truncated to only include the 
+ : first 1,000 bases.
+ :
+ : TODO: Add support for offset to handle >1,000 bases.
  : 
- : Developers must request an Airtable Metadata Client Secret token.
+ : @param $access-token Airtable personal access token or OAuth access token
  : 
- : @param $api-key Airtable API Key
- : @param $client-secret Airtable Metadata API Client Secret token
+ : @return A map containing a "bases" entry, or a map with an "error" entry containing information about the request
+ : 
+ : @see https://airtable.com/developers/web/api/list-bases
+ :)
+declare function airtable:list-bases(
+    $access-token as xs:string
+) as map(*) {
+    airtable:send-request(
+        $access-token, 
+        "GET", 
+        airtable:generate-href(("meta", "bases"))
+    )
+};
+
+(:~ 
+ : Get base schema
+ : 
+ : Returns the schema of the tables in the specified base.
+ : 
+ : @param $access-token Airtable personal access token or OAuth access token
  : @param $base-id The ID of the base
  : 
  : @return A map containing a "tables" entry, or a map with an "error" entry containing information about the request
  : 
- : @see https://airtable.com/api
+ : @see https://airtable.com/developers/web/api/get-base-schema
  :)
-declare function airtable:get-base-tables-schema(
-    $api-key as xs:string, 
-    $client-secret as xs:string, 
+declare function airtable:get-base-schema(
+    $access-token as xs:string, 
     $base-id as xs:string
 ) as map(*) {
-    airtable:send-request($api-key, $client-secret, "GET", $base-id, (), (), (), (), ())
+    airtable:send-request(
+        $access-token, 
+        "GET", 
+        airtable:generate-href(("meta", "bases", $base-id, "tables"))
+    )
 };
 
 (:~ 
  : Create records
  : 
- : @param $api-key Airtable API Key
+ : @param $access-token Airtable personal access token or OAuth access token
  : @param $base-id The ID of the base
- : @param $table-name The name of the table where the records should be added
+ : @param $table-id-or-name The ID or name of the table where the records should be added
  : @param $records A sequence of maps, each containing a "fields" entry
  : 
  : @return A map containing an "records" entry with an array of the new record entries created if the call succeeded, including record IDs that uniquely identify the records, or a map with an "error" entry containing information about the request
- : 
- : @see https://airtable.com/api
+ :
+ : https://airtable.com/developers/web/api/create-records
  :)
 declare function airtable:create-records(
-    $api-key as xs:string, 
+    $access-token as xs:string, 
     $base-id as xs:string, 
-    $table-name as xs:string, 
+    $table-id-or-name as xs:string, 
     $records as map(*)*
 ) as map(*)+ {
     let $records-for-this-request := 
@@ -168,58 +203,106 @@ declare function airtable:create-records(
                 }
         }
     let $records-for-next-request := subsequence($records, $airtable:MAX_RECORDS_PER_CREATE_REQUEST + 1)
-    let $response := airtable:send-request($api-key, (), "POST", $base-id, $table-name, (), (), (), $records-for-this-request)
+    let $response := 
+        airtable:send-request(
+            $access-token, 
+            "POST", 
+            airtable:generate-href(($base-id, $table-id-or-name)), 
+            $records-for-this-request
+        )
     return
         (
             $response,
-            (: keep creating records if the first attempt was successful :)
+            (: create the rest of the records if the first attempt was successful :)
             if (exists($records-for-next-request) and map:contains($response, "records")) then
-                airtable:create-records($api-key, $base-id, $table-name, $records-for-next-request)
+                airtable:create-records($access-token, $base-id, $table-id-or-name, $records-for-next-request)
             else
                 ()
         )
 };
 
 (:~ 
- : Retrieve a record
+ : Get record
  : 
- : Any "empty" fields (e.g. "", [], or false) in the record will not be returned.
+ : Retrieve a single record. Any "empty" fields (e.g. "", [], or false) in the 
+ : record will not be returned.
  : 
  : In attachment objects included in the retrieved record, only id, url, and 
- : filename are always returned. Other attachment properties may not be included.
+ : filename are always returned. Other attachment properties may not be 
+ : included.
  : 
- : @param $api-key Airtable API Key
+ : @param $access-token Airtable personal access token or OAuth access token
  : @param $base-id The ID of the base
- : @param $table-name The name of the table where the records should be added
+ : @param $table-id-or-name The ID or name of the table where the records should be added
  : @param $record-id A record ID
  : 
  : @return A map containing the record if the call succeeded, or a map with an "error" entry containing information about the request
  : 
- : @see https://airtable.com/api
+ : @see https://airtable.com/developers/web/api/get-record
  :)
-declare function airtable:retrieve-record(
-    $api-key as xs:string, 
+declare function airtable:get-record(
+    $access-token as xs:string, 
     $base-id as xs:string, 
-    $table-name as xs:string, 
+    $table-id-or-name as xs:string, 
     $record-id as xs:string
 ) as map(*) {
-    airtable:send-request($api-key, (), "GET", $base-id, $table-name, $record-id, (), (), ())
+    airtable:send-request(
+        $access-token, 
+        "GET", 
+        airtable:generate-href(($base-id, $table-id-or-name, $record-id))
+    )
 };
 
 (:~ 
- : List a table’s records
+ : List records
  : 
+ : List records in a table. Note that table names and table ids can be used interchangeably. 
+ :
  : Any "empty" fields (e.g. "", [], or false) in the record will not be returned.
  : 
- : You can filter, sort, and format the results by supplying parameters. 
+ : @param $access-token Airtable personal access token or OAuth access token
+ : @param $base-id The ID of the base
+ : @param $table-id-or-name The ID or name of the table where the records should be added
+ : 
+ : @return A map containing a "records" entry if the call succeeded, or a map with an "error" entry containing information about the request
+ : 
+ : @see https://airtable.com/developers/web/api/list-records
+ :)
+declare function airtable:list-records(
+    $access-token as xs:string, 
+    $base-id as xs:string, 
+    $table-id-or-name as xs:string
+) as map(*)+ {
+    airtable:list-records(
+        $access-token, 
+        $base-id, 
+        $table-id-or-name, 
+        (),
+        (),
+        (),
+        (),
+        (),
+        (),
+        ()
+    )
+};
+
+(:~ 
+ : List records
+ : 
+ : List records in a table. Note that table names and table ids can be used 
+ : interchangeably. 
+ :
+ : Any "empty" fields (e.g. "", [], or false) in the record will not be returned.
  : 
  : The server returns one page of records at a time. Each page will contain 
  : $page-size records, which is 100 by default. If there are more records, the 
- : response will contain an offset. To continue loading all pages automatically, 
- : set $load-multiple-pages to true(). Pagination will stop when you’ve reached 
+ : response will contain an offset. Pagination will stop when you’ve reached 
  : the end of the table. If the $max-records parameter is passed, pagination 
  : will stop once you’ve reached this maximum.
 
+ : You can filter, sort, and format the results by supplying parameters. 
+ : 
  : The only standard parameters that aren’t supported are cellFormat and the
  : associated timeZone and userLocale. Besides cellFormat’s default value of 
  : "json", the only other value is "string"; the documentation warns: "You 
@@ -227,10 +310,9 @@ declare function airtable:retrieve-record(
  : The timeZone and userLocale parameters are only relevant when cellFormat is
  : set to "string."
  : 
- : @param $api-key Airtable API Key
+ : @param $access-token Airtable personal access token or OAuth access token
  : @param $base-id The ID of the base
- : @param $table-name The name of the table where the records should be added
- : @param $load-multiple-pages Whether or not to load pages until the entire table has been loaded
+ : @param $table-id-or-name The ID or name of the table where the records should be added
  : @param $fields Only data for fields whose names are in this list will be included in the result. If you don’t need every field, you can use this parameter to reduce the amount of data transferred.
  : @param $filter-by-formula An Airtable formula used to filter records. The formula will be evaluated for each record, and if the result is not 0, false, "", NaN, [], or #Error! the record will be included in the response.
  : @param $max-records The maximum total number of records that will be returned in your requests. If this value is larger than page-size (which is 100 by default), you may have to load multiple pages to reach this total.
@@ -241,13 +323,12 @@ declare function airtable:retrieve-record(
  : 
  : @return A map containing a "records" entry if the call succeeded, or a map with an "error" entry containing information about the request
  : 
- : @see https://airtable.com/api
+ : @see https://airtable.com/developers/web/api/list-records
  :)
 declare function airtable:list-records(
-    $api-key as xs:string, 
+    $access-token as xs:string, 
     $base-id as xs:string, 
-    $table-name as xs:string, 
-    $load-multiple-pages as xs:boolean?,
+    $table-id-or-name as xs:string, 
     $fields as xs:string*,
     $filter-by-formula as xs:string?,
     $max-records as xs:integer?,
@@ -302,16 +383,20 @@ declare function airtable:list-records(
             else 
                 ()
         ))
-    let $request := airtable:send-request($api-key, (), "GET", $base-id, $table-name, (), $parameters, (), ())
+    let $request := 
+        airtable:send-request(
+            $access-token, 
+            "GET", 
+            airtable:generate-href(($base-id, $table-id-or-name), $parameters)
+        )
     return
         (
             $request,
-            if ($load-multiple-pages and exists($request?offset)) then
+            if (exists($request?offset)) then
                 airtable:list-records(
-                    $api-key,
+                    $access-token,
                     $base-id, 
-                    $table-name, 
-                    $load-multiple-pages,
+                    $table-id-or-name, 
                     $fields,
                     $filter-by-formula,
                     $max-records,
@@ -326,7 +411,7 @@ declare function airtable:list-records(
 };
 
 (:~ 
- : Update records
+ : Update record or multiple records
  : 
  : Each of the $records maps should have an "id" entry containing the record ID 
  : and a "fields" entry, containing an array all of the record’s cell values by 
@@ -338,20 +423,21 @@ declare function airtable:list-records(
  : and "filename" is optional. To remove attachments, include the existing array 
  : of attachment entry, excluding any that you wish to remove.
  : 
- : @param $api-key Airtable API Key
+ : @param $access-token Airtable personal access token or OAuth access token
  : @param $base-id The ID of the base
- : @param $table-name The name of the table where the records should be added
+ : @param $table-id-or-name The ID or name of the table where the records should be added
  : @param $records A sequence of maps containing "id" and "fields" entries
- : @param $destroy-existing Whether to perform a destructive update and clear all unspecified cell values
+ : @param $destroy-existing Whether to perform a destructive update and clear all unspecified fields' values
  : 
  : @return A map containing an "records" entry with an array of the updated record entries created if the call succeeded, or a map with an "error" entry containing information about the request
  : 
- : @see https://airtable.com/api
+ : @see https://airtable.com/developers/web/api/update-record
+ : @see https://airtable.com/developers/web/api/update-multiple-records
  :)
 declare function airtable:update-records(
-    $api-key as xs:string, 
+    $access-token as xs:string, 
     $base-id as xs:string, 
-    $table-name as xs:string, 
+    $table-id-or-name as xs:string, 
     $records as map(*)+,
     $destroy-existing as xs:boolean?
 ) as map(*)+ {
@@ -371,39 +457,50 @@ declare function airtable:update-records(
                 }
         }
     let $records-for-next-request := subsequence($records, $airtable:MAX_RECORDS_PER_UPDATE_REQUEST + 1)
-    let $response := airtable:send-request($api-key, (), $method, $base-id, $table-name, (), (), (), $records-for-this-request)
+    let $response := 
+        airtable:send-request(
+            $access-token, 
+            $method, 
+            airtable:generate-href(($base-id, $table-id-or-name)), 
+            $records-for-this-request
+        )
     return
         (
             $response,
             (: keep creating records if the first attempt was successful :)
             if (exists($records-for-next-request) and map:contains($response, "records")) then
-                airtable:update-records($api-key, $base-id, $table-name, $records-for-next-request, $destroy-existing)
+                airtable:update-records($access-token, $base-id, $table-id-or-name, $records-for-next-request, $destroy-existing)
             else
                 ()
         )
 };
 
 (:~ 
- : Delete records
+ : Delete record or multiple records
  : 
- : @param $api-key Airtable API Key
+ : @param $access-token Airtable personal access token or OAuth access token
  : @param $base-id The ID of the base
- : @param $table-name The name of the table where the records should be added
+ : @param $table-id-or-name The ID or name of the table where the records should be added
  : @param $record-ids The IDs of records to delete
  : 
  : @return A map containing a "records" entry listing the deleted record IDs if the call succeeded, or a map with an "error" entry containing information about the request
  : 
- : @see https://airtable.com/api
+ : @see https://airtable.com/developers/web/api/delete-record
+ : @see https://airtable.com/developers/web/api/delete-multiple-records
  :)
 declare function airtable:delete-records(
-    $api-key as xs:string, 
+    $access-token as xs:string, 
     $base-id as xs:string, 
-    $table-name as xs:string, 
+    $table-id-or-name as xs:string, 
     $record-ids as xs:string+
 ) as map(*) {
-    let $parameters := map:entry("records[]", $record-ids)
+    let $parameters := map { "records": $record-ids }
     return
-        airtable:send-request($api-key, (), "DELETE", $base-id, $table-name, (), $parameters, (), ())
+        airtable:send-request(
+            $access-token, 
+            "DELETE", 
+            airtable:generate-href(($base-id, $table-id-or-name), $parameters)
+        )
 };
 
 
@@ -414,14 +511,36 @@ declare function airtable:delete-records(
  : as soon as the API’s rate limit allows, processing status codes to handle
  : errors.
  : 
- : @param $api-key Airtable API Key
- : @param $metadata-api-client-secret Airtable Metadata API Client Secret token
+ : @param $access-token Airtable personal access token or OAuth access token
  : @param $method The HTTP method to use for the request
- : @param $base-id The ID of the base
- : @param $table-name The name of the table where the records should be added
- : @param $record-id The ID of the record
- : @param $parameters Request parameters
- : @param $headers Request headers
+ : @param $href The API endpoint URL, including optional query string
+ : 
+ : @return The response body if the call succeeded, or a map with an "error" entry containing information about the request
+ :)
+declare 
+    %private
+function airtable:send-request(
+    $access-token as xs:string, 
+    $method as xs:string,
+    $href as xs:string 
+) {
+    airtable:send-request(
+        $access-token, 
+        $method, 
+        $href, 
+        (), 
+        ()
+    )
+};
+
+(:~ 
+ : Assembles EXPath HTTP Client request element, sending the request to Airtable
+ : as soon as the API’s rate limit allows, processing status codes to handle
+ : errors.
+ : 
+ : @param $access-token Airtable personal access token or OAuth access token
+ : @param $method The HTTP method to use for the request
+ : @param $href The API endpoint URL, including optional query string
  : @param $body Request body
  : 
  : @return The response body if the call succeeded, or a map with an "error" entry containing information about the request
@@ -429,36 +548,52 @@ declare function airtable:delete-records(
 declare 
     %private
 function airtable:send-request(
-    $api-key as xs:string, 
-    $metadata-api-client-secret as xs:string?, 
+    $access-token as xs:string, 
     $method as xs:string,
-    $base-id as xs:string?, 
-    $table-name as xs:string?, 
-    $record-id as xs:string?, 
-    $parameters as map(*)?, 
-    $headers as map(*)?, 
-    $body as map(*)?
+    $href as xs:string, 
+    $records as map(*)?
 ) {
+    airtable:send-request(
+        $access-token, 
+        $method, 
+        $href, 
+        $records, 
+        ()
+    )
+};
+
+    (:~ 
+ : Assembles EXPath HTTP Client request element, sending the request to Airtable
+ : as soon as the API’s rate limit allows, processing status codes to handle
+ : errors.
+ : 
+ : @param $access-token Airtable personal access token or OAuth access token
+ : @param $method The HTTP method to use for the request
+ : @param $href The API endpoint URL, including optional query string
+ : @param $body Request body
+ : @param $headers Request headers
+ : 
+ : @return The response body if the call succeeded, or a map with an "error" entry containing information about the request
+ :)
+declare 
+    %private
+function airtable:send-request(
+    $access-token as xs:string, 
+    $method as xs:string,
+    $href as xs:string, 
+    $records as map(*)?,
+    $headers as map(*)? 
+) {
+    let $initialize-cache-if-needed := $airtable:INITIALIZE_CACHE
+    let $user-id := airtable:get-user-id($access-token)
     let $request := 
         element http:request {
-            attribute href { 
-                if (exists($metadata-api-client-secret)) then
-                    airtable:build-metadata-api-url($base-id)
-                else
-                    airtable:build-rest-api-url($base-id, $table-name, $record-id, $parameters) 
-            },
+            attribute href { $href },
             attribute method { $method },
             element http:header {
                 attribute name { "Authorization" },
-                attribute value { "Bearer " || $api-key }
+                attribute value { "Bearer " || $access-token }
             },
-            if (exists($metadata-api-client-secret)) then
-                element http:header {
-                    attribute name { "X-Airtable-Client-Secret" },
-                    attribute value { $metadata-api-client-secret }
-                }
-            else
-                (),
             if (exists($headers)) then
                 map:for-each(
                     $headers,
@@ -471,18 +606,16 @@ function airtable:send-request(
                 )
             else
                 (),
-            if (exists($body)) then
+            if (exists($records)) then
                 element http:body { 
                     attribute media-type { "application/json" },
                     attribute method { "text" },
-                    serialize($body, map { "method": "json" })
+                    serialize($records, map { "method": "json" })
                 }
             else
                 ()
         }
-    (: Use the Base ID as the cache key; the Metadata API doesn't appear to be per-base :)
-    let $rate-limit-cache-key := ($base-id, "metadata-api")[1]
-    let $response := airtable:send-request-when-rate-limit-ok($request, $rate-limit-cache-key)
+    let $response := airtable:send-request-when-rate-limit-ok($user-id, $request)
     return
         if ($response?status eq $airtable:HTTP-OK) then
             $response?body
@@ -491,27 +624,74 @@ function airtable:send-request(
 };
 
 (:~ 
+ : Looks up the user ID for the username corresponding to the personal access 
+ : token or service account access token. Needed as a cache key since rate 
+ : limiting is against the user, not the access token.
+ : 
+ : @param $access-token Airtable personal access token or OAuth access token
+ : 
+ : @return The user ID
+ :)
+declare
+    %private
+function airtable:get-user-id($access-token) as xs:string {
+    let $access-token-hash := util:hash($access-token, "SHA-256")
+    return
+        (: we store the user ID in a cache whose key is a hash of the access token :)
+        if (cache:keys($airtable:RATE_LIMIT_CACHE_NAME) = $access-token-hash) then
+            cache:get($airtable:RATE_LIMIT_CACHE_NAME, $access-token-hash)
+        (: if it's not present, look it up from Airtable :)
+        else
+            let $href := airtable:generate-href(("meta", "whoami"))
+            let $method := "GET"
+            let $request := 
+                element http:request {
+                    attribute href { $href },
+                    attribute method { $method },
+                    element http:header {
+                        attribute name { "Authorization" },
+                        attribute value { "Bearer " || $access-token }
+                    }
+                }
+            let $response := http:send-request($request)
+            let $response-head := $response[1]
+            let $user-id :=
+                if ($response-head/@status eq $airtable:HTTP-OK) then
+                    let $response-body := $response[2] ! (util:binary-to-string(.) => parse-json())
+                    return
+                        $response-body?id
+                else
+                    (: fall back on a harmless value; the underlying cause of 
+                     : the error will be apparent with request to the actual API 
+                     :)
+                    let $_log := util:log("INFO", "attempt to look up Airtable user ID failed with a status code of " || $response-head/@status)
+                    return
+                        "unknown-user"
+            let $cache-put := cache:put($airtable:RATE_LIMIT_CACHE_NAME, $access-token-hash, $user-id)
+            return
+                $user-id
+};
+
+(:~ 
  : Sends requests, waiting until the rate limit expires if necessary. 
  : 
+ : @param $user-id User ID of the account that owns the access token
  : @param $request EXPath HTTP Request element
- : @param $cache-key The key for looking up when the current base’s rate limits will allow the request to be sent
  : 
  : @return A map containing a reflection of the request, the response status code, the response head and body, the status of rate limit before the request was sent
  :)
 declare
     %private
 function airtable:send-request-when-rate-limit-ok(
-    $request as element(http:request), 
-    $cache-key as xs:string?
+    $user-id as xs:string, 
+    $request as element(http:request)
 ) as map(*) {
-    let $initialize-cache-if-needed := $airtable:INITIALIZE_CACHE
     let $start-dateTime := util:system-dateTime()
-    let $wait-until := cache:get($airtable:RATE_LIMIT_CACHE_NAME, $cache-key)
+    let $wait-until := cache:get($airtable:RATE_LIMIT_CACHE_NAME, $user-id)
     let $rate-limit-info := 
         if (empty($wait-until)) then
             map { 
-                "assessment": "send request, since no rate limit expiration had"
-                    || " been set",
+                "assessment": "send request, since no rate limit expiration had been set",
                 "can-send-request-immediately": true()
             }
         else
@@ -519,8 +699,7 @@ function airtable:send-request-when-rate-limit-ok(
             return
                 if ($ok) then
                     map {
-                        "assessment": "send request, since rate limit already"
-                            || " expired at " || $wait-until,
+                        "assessment": "send request, since rate limit already expired at " || $wait-until,
                         "can-send-request-immediately": true()
                     }
                 else
@@ -545,7 +724,7 @@ function airtable:send-request-when-rate-limit-ok(
     let $set-next-expiration := 
         cache:put(
             $airtable:RATE_LIMIT_CACHE_NAME, 
-            $cache-key, 
+            $user-id, 
             (: "If you exceed this rate, you will receive a 429 status code and 
              : will need to wait 30 seconds before subsequent requests will 
              : succeed." :)
@@ -588,85 +767,55 @@ function airtable:wait(
 };
 
 (:~ 
- : Construct the REST API URL for a request, applying URL encoding to table name
- : and all parameter names & values. 
+ : Construct the Airtable Web API URL for a request from path segments. 
  : 
- : @param $base-id The ID of the base
- : @param $table-name The name of the table where the records should be added
- : @param $record-id The ID of the record
- : @param $parameters Request parameters
+ : @param $path-segments Segments of the path
  : 
- : @return The REST API URL
+ : @return The Airtable Web API URL
  :)
 declare 
-    %private
-function airtable:build-rest-api-url(
-    $base-id as xs:string?, 
-    $table-name as xs:string?, 
-    $record-id as xs:string?,
-    $parameters as map(*)?
+(:    %private:)
+function airtable:generate-href(
+    $path-segments as xs:string+
 ) as xs:string {
-    let $fragments :=
-        (
-            $airtable:REST_API,
-            $base-id,
-            "/",
-            encode-for-uri($table-name),
-            if (exists($record-id)) then
-                (
-                    "/",
-                    $record-id
-                )
-            else
-                (),
-            if (exists($parameters)) then
-                (
-                    "?",
-                    string-join(
-                        map:for-each(
-                            $parameters, 
-                            function($key, $values) { 
-                                for $value in $values
-                                return
-                                    encode-for-uri($key) || "=" || encode-for-uri($value)
-                            }
-                        ),
-                        "&amp;"
-                    )
-                )
-            else
-                ()
-        )
-    return
-        string-join($fragments)
+    airtable:generate-href($path-segments, ())
 };
 
 (:~ 
- : Construct the Metadata API URL for a request, applying URL encoding to table name
- : and all parameter names & values. 
+ : Construct the Airtable Web API URL for a request from path segments and 
+ : parameter names & values. 
  : 
- : @param $base-id The ID of the base
+ : @param $path-segments Segments of the path
+ : @param $parameters Request parameters
  : 
- : @return The Metadata API URL
+ : @return The Airtable Web API URL
  :)
 declare 
-    %private
-function airtable:build-metadata-api-url(
-    $base-id as xs:string?
+(:    %private:)
+function airtable:generate-href(
+    $path-segments as xs:string+,
+    $parameters as map(*)?
 ) as xs:string {
-    let $fragments := 
-        (
-            $airtable:METADATA_API,
-            "bases",
-            if (exists($base-id)) then
-                (
-                    "/",
-                    $base-id,
-                    "/tables"
-                )
-            else
-                ()
-        )
+    let $path :=
+        $path-segments
+        => for-each(encode-for-uri#1)
+        => string-join("/")
+    let $query-string :=
+        if (exists($parameters)) then
+            $parameters
+            => map:for-each(
+                function($key, $values) { 
+                    for $value in $values
+                    return
+                        encode-for-uri($key) || "=" || encode-for-uri($value)
+                }
+            )
+            => string-join("&amp;")
+        else
+            ()
     return
-        string-join($fragments)
+        concat(
+            $airtable:WEB_API_BASE,
+            string-join(($path, $query-string), "?")
+        )
 };

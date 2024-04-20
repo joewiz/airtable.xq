@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<meta xmlns="http://exist-db.org/xquery/repo" commit-id="@commit-id@" commit-time="@commit-time@">
-    <description>A library for the Airtable REST API and Metadata API</description>
+<meta commit-id="@commit-id@" commit-time="@commit-time@" xmlns="http://exist-db.org/xquery/repo">
+    <description>A library for the Airtable Web API, using XQuery</description>
     <author>Joe Wicentowski</author>
     <website>https://github.com/joewiz/airtable.xq</website>
     <status>stable</status>
@@ -8,9 +8,16 @@
     <copyright>true</copyright>
     <type>library</type>
     <changelog>
+        <change version="1.0.4">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>From this version forward, release notes for each version can be found at
+                    https://github.com/joewiz/airtable.xq/releases</li>
+            </ul>
+        </change>
         <change version="1.0.3">
             <ul xmlns="http://www.w3.org/1999/xhtml">
-                <li>Fixed: Processing of batches of create or update requests containing more than 10 records</li>
+                <li>Fixed: Processing of batches of create or update requests containing more than
+                    10 records</li>
                 <li>Fixed: Explicitly create cache, as required by eXist 5.3.0</li>
             </ul>
         </change>
