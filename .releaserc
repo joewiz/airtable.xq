@@ -1,0 +1,32 @@
+{
+  "branches": ["main"],  
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    {
+      "preset": "conventionalcommits",
+      "releaseRules": [
+        { "type": "", "release": "patch" }
+      ]
+    },
+    "@semantic-release/release-notes-generator",
+    {
+      "preset": "conventionalcommits"
+    },
+    ["@semantic-release/exec", {
+      "prepareCmd": "ant -Dapp.version=${nextRelease.version}"
+    }],
+    ["@semantic-release/git", {
+      "assets": ["package.json", "package-lock.json"],
+      "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+    }],
+    ["@semantic-release/github", {
+      "assets": [
+        {
+          "path": "build/airtable-xq.xar", 
+          "name": "airtable-xq.xar",
+          "label": "Expath package (aws-xq.xar)"
+        }
+      ]
+    }]
+  ]
+}
