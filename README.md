@@ -103,7 +103,7 @@ More recently, I've adopted the CI approach used by @duncdrum in [aws.xq](https:
 
 ## Installation
 
-1.  Download the `airtable.xar` file from GitHub [releases](https://github.com/joewiz/airtable.xq/releases) page.
+1.  Download the `airtable.xq.xar` file from GitHub [releases](https://github.com/joewiz/airtable.xq/releases) page.
 
 2.  Open the [Dashboard](http://localhost:8080/exist/apps/dashboard/index.html) on your eXist-db instance and click on `Package Manager`.
 
@@ -128,7 +128,7 @@ Since releases have been automated when building locally you might want to suppl
 ant -Dapp.version=X.X.X
 ```
 
-If you see `BUILD SUCCESSFUL` ant has generated a `airtable.xar` file in the `build/` folder. To install it, follow the instructions [above](#installation).
+If you see `BUILD SUCCESSFUL` ant has generated a `airtable.xq.xar` file in the `build/` folder. To install it, follow the instructions [above](#installation).
 
 ## Contributing
 
