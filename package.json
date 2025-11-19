@@ -10,7 +10,7 @@
         "@commitlint/config-angular": "^18.4.3",
         "@semantic-release/exec": "^6.0.3",
         "@semantic-release/git": "^10.0.1",
-        "semantic-release": "^22.0.12"
+        "semantic-release": "^25.0.2"
     },
     "name": "airtable.xq",
     "repository": {
